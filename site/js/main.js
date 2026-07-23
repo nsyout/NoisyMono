@@ -38,7 +38,7 @@ code[class*="language-"]::selection, code[class*="language-"] ::selection {
 // ── Width switcher ────────────────────────────────────────────────────
 
 const widthOpts = document.querySelectorAll('#width-switcher .seg-opt');
-const WIDTH_KEY = 'ioskeley-width';
+const WIDTH_KEY = 'noisy-mono-width';
 
 (function initWidth() {
   const saved = localStorage.getItem(WIDTH_KEY);
@@ -240,7 +240,7 @@ const trySamplesData = {
         '        <time datetime="2026-05-26">May 26</time>',
         '    </header>',
         '    <section class="content">',
-        '        <p>Styled with <strong>Ioskeley Mono</strong>.</p>',
+        '        <p>Styled with <strong>Noisy Mono</strong>.</p>',
         '        <pre><code>npm run build</code></pre>',
         '    </section>',
         '</article>',
@@ -510,7 +510,7 @@ Prism.plugins.autoloader.loadLanguages(
 
 (async function loadDownloads() {
   try {
-    const res = await fetch('https://api.github.com/repos/ahatem/IoskeleyMono/releases/latest');
+    const res = await fetch('https://api.github.com/repos/nsyout/NoisyMono/releases/latest');
     if (!res.ok) return;
     const release = await res.json();
     const assetMap = {};

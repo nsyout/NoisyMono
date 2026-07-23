@@ -1,0 +1,91 @@
+name: Check Stable Font Dependencies
+
+on:
+  schedule:
+    - cron: "17 14 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: check-stable-font-dependencies
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compare pinned and stable releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          manifest=".github/font-toolchain.json"
+          iosevka_repository="$(jq -r '.iosevka.repository' "$manifest")"
+          nerd_fonts_repository="$(jq -r '.nerdFonts.repository' "$manifest")"
+          pinned_iosevka="$(jq -r '.iosevka.tag' "$manifest")"
+          pinned_nerd_fonts="$(jq -r '.nerdFonts.tag' "$manifest")"
+          latest_iosevka="$(
+            gh api "repos/$iosevka_repository/releases/latest" --jq '.tag_name'
+          )"
+          latest_nerd_fonts="$(
+            gh api "repos/$nerd_fonts_repository/releases/latest" --jq '.tag_name'
+          )"
+
+          title="[dependencies] Stable font toolchain updates available"
+          body="The pinned font toolchain is behind at least one stable upstream release."
+          body+=$'\n\nUpdate `.github/font-toolchain.json` deliberately, rebuild every archive,'
+          body+=$'\nand review font names, glyph coverage, metrics, and file sizes before merging.'
+          body+=$'\n\n'
+          needs_update=false
+
+          if [[ "$pinned_iosevka" != "$latest_iosevka" ]]; then
+            needs_update=true
+            body+="- [ ] Iosevka: \`$pinned_iosevka\` → "
+            body+="[\`$latest_iosevka\`](https://github.com/$iosevka_repository/releases/tag/$latest_iosevka)"
+            body+=$'\n'
+          fi
+
+          if [[ "$pinned_nerd_fonts" != "$latest_nerd_fonts" ]]; then
+            needs_update=true
+            body+="- [ ] Nerd Fonts: \`$pinned_nerd_fonts\` → "
+            body+="[\`$latest_nerd_fonts\`](https://github.com/$nerd_fonts_repository/releases/tag/$latest_nerd_fonts)"
+            body+=$'\n'
+          fi
+
+          issue_json="$(
+            gh issue list \
+              --repo "$GITHUB_REPOSITORY" \
+              --state all \
+              --limit 100 \
+              --json number,state,title \
+              --jq 'map(select(.title == "[dependencies] Stable font toolchain updates available")) | first // {}'
+          )"
+          issue_number="$(jq -r '.number // empty' <<<"$issue_json")"
+          issue_state="$(jq -r '.state // empty' <<<"$issue_json")"
+
+          if [[ "$needs_update" == "true" ]]; then
+            if [[ -n "$issue_number" ]]; then
+              gh issue edit "$issue_number" --repo "$GITHUB_REPOSITORY" --body "$body"
+              if [[ "$issue_state" == "CLOSED" ]]; then
+                gh issue reopen "$issue_number" --repo "$GITHUB_REPOSITORY"
+              fi
+            else
+              gh issue create \
+                --repo "$GITHUB_REPOSITORY" \
+                --title "$title" \
+                --body "$body"
+            fi
+          elif [[ -n "$issue_number" && "$issue_state" == "OPEN" ]]; then
+            gh issue close \
+              "$issue_number" \
+              --repo "$GITHUB_REPOSITORY" \
+              --comment "Pinned versions now match both latest stable releases."
+          fi

@@ -1,30 +1,31 @@
-# Ioskeley Mono
+# Noisy Mono
 
-![Ioskeley Mono Cover](assets/SocialPreview.png)
+![Noisy Mono Cover](assets/SocialPreview.png)
 
 A free, open-source alternative to [Berkeley Mono](https://berkeleygraphics.com/typefaces/berkeley-mono/) — built by configuring [Iosevka](https://github.com/be5invis/Iosevka) to match its look and feel as closely as possible.
 
-The name is a mashup: **Iosevka** + **Berkeley** = **Ioskeley**.
+Noisy Mono is an independently maintained derivative of
+[Ioskeley Mono](https://github.com/ahatem/IoskeleyMono).
 
 ---
 
 ## Live Preview
 
-See Ioskeley Mono in action with real-time editable samples, multiple programming languages, and side-by-side comparison with Berkeley Mono:
+See Noisy Mono in action with real-time editable samples, multiple programming languages, and side-by-side comparison with Berkeley Mono:
 
-**[→ Open Interactive Showcase](https://ahatem.github.io/IoskeleyMono/)**
+**[→ Open Interactive Showcase](https://nsyout.github.io/NoisyMono/)**
 
 ---
 
 ## Static Preview
 
-| Ioskeley Mono | Berkeley Mono |
+| Noisy Mono | Berkeley Mono |
 | --- | --- |
-| ![Ioskeley Mono Sample](assets/IoskeleyMono.png) | ![Berkeley Mono Sample](assets/BerkeleyMono.png) |
+| ![Noisy Mono Sample](assets/NoisyMono.png) | ![Berkeley Mono Sample](assets/BerkeleyMono.png) |
 
 > Theme: [Kintsugi Dark Flared](https://marketplace.visualstudio.com/items?itemName=ahmedhatem.kintsugi)
 
-![Ioskeley Mono in Action](assets/InAction.png)
+![Noisy Mono in Action](assets/InAction.png)
 
 > Theme: [Kanagawa Dragon Theme](https://plugins.jetbrains.com/plugin/27101-kanagawa-dragon-theme)
 
@@ -32,21 +33,36 @@ See Ioskeley Mono in action with real-time editable samples, multiple programmin
 
 ## Installation
 
-Download the latest release from the [Releases page](https://github.com/ahatem/IoskeleyMono/releases).
+Download the latest release from the [Releases page](https://github.com/nsyout/NoisyMono/releases).
 
 ### Which file do I need?
 
 | Situation | Download |
 |---|---|
-| Editor or IDE (VS Code, JetBrains, Zed…) | `IoskeleyMono.zip` |
-| Terminal with icons (Neovim, Starship…) | `IoskeleyMono-NerdFont.zip` |
-| Arrows or box-drawing look wrong in my terminal | `IoskeleyMono-Term.zip` |
-| Terminal with icons _and_ rendering issues | `IoskeleyMono-Term-NerdFont.zip` |
-| App that can't disable ligatures (Xcode…) | `IoskeleyMono-NL.zip` |
-| Same, but also need Nerd Font icons | `IoskeleyMono-NL-NerdFont.zip` |
-| Web / CSS (`@font-face`) | `IoskeleyMono-Web.zip` |
+| Editor or IDE (VS Code, JetBrains, Zed…) | `NoisyMono.zip` |
+| Terminal with icons (Neovim, Starship…) | `NoisyMono-NerdFont.zip` |
+| Arrows or box-drawing look wrong in my terminal | `NoisyMono-Term.zip` |
+| Terminal with icons _and_ rendering issues | `NoisyMono-Term-NerdFont.zip` |
+| App that can't disable ligatures (Xcode…) | `NoisyMono-NL.zip` |
+| Same, but also need Nerd Font icons | `NoisyMono-NL-NerdFont.zip` |
+| Web / CSS, Latin and technical symbols | `NoisyMono-Web.zip` |
+| Web / CSS, complete glyph repertoire | `NoisyMono-Web-Full.zip` |
 
-> **Not sure?** Start with `IoskeleyMono.zip`.
+> **Not sure?** Start with `NoisyMono.zip`.
+
+### Webfonts
+
+The default web archive contains unhinted, curated subsets rather than the
+roughly 500 KB full-glyph file for every face. It retains Latin and Latin
+Extended, combining marks, punctuation, currency, arrows, math and technical
+symbols, box drawing, geometric symbols, common Latin ligatures, and all
+OpenType layout features supported by the included glyphs.
+
+All weights, styles, and widths are included with a ready-to-use CSS file.
+Unsupported scripts fall back according to your CSS font stack. Choose
+`NoisyMono-Web-Full.zip` when a site needs the complete Iosevka glyph
+repertoire. See [`webfonts/README.md`](webfonts/README.md) for usage and
+regeneration details.
 
 ### What's inside each TTF zip?
 
@@ -77,17 +93,48 @@ Install all fonts in your chosen folder — your OS will expose the full weight 
 
 ### About the Term variant
 
-`Ioskeley Mono Term` uses `spacing = "term"`, which constrains every glyph to its cell boundary. Use it if arrows (`→ ← ↑ ↓`), box-drawing characters, or ligatures render incorrectly in your terminal (known affected: kitty, Ghostty). The glyph design is identical to the standard variant — it's purely a spacing change.
+`Noisy Mono Term` uses Iosevka's `fontconfig-mono` spacing. Every
+non-combining glyph occupies one cell, allowing Fontconfig, KDE, and fixed-width
+font pickers to recognize it reliably. It also exports glyph names required for
+programming ligatures in Kitty.
+
+Strict one-cell spacing omits a small set of inherently wide symbols, including
+long-arrow characters. Use the standard family when complete glyph coverage is
+more important than strict terminal classification.
+
+### About the Nerd Font variants
+
+Nerd Font archives are patched in Mono mode. Their icons and existing glyphs
+are normalized to one cell, and their fixed-pitch metadata is validated before
+packaging. This makes the installed `Nerd Font Mono` families suitable for
+terminal and fixed-width font pickers.
 
 ### About the NL variant
 
-`Ioskeley Mono NL` has all ligature substitutions disabled. Use it in apps that can't toggle ligatures off themselves (e.g. Xcode). Everything else — weights, widths, glyph shapes, metrics — is identical to the standard variant.
+`Noisy Mono NL` has all ligature substitutions disabled. Use it in apps that can't toggle ligatures off themselves (e.g. Xcode). Everything else — weights, widths, glyph shapes, metrics — is identical to the standard variant.
+
+### Slashed zero
+
+The default zero is dotted. A slashed zero is already included through the
+OpenType `zero` feature, so a separate font build is unnecessary:
+
+```css
+code {
+  font-feature-settings: "zero" 1;
+}
+```
+
+In Ghostty:
+
+```ini
+font-feature = zero
+```
 
 ---
 
 ## Weights
 
-Ioskeley Mono matches Berkeley Mono's full weight axis across all widths:
+Noisy Mono matches Berkeley Mono's full weight axis across all widths:
 
 | Weight | CSS value |
 |---|---|
@@ -108,7 +155,7 @@ Every weight is available in all three widths, both Upright and Italic.
 
 ## Design Choices
 
-Ioskeley Mono uses specific character variants and custom metrics to closely match Berkeley Mono's aesthetic.
+Noisy Mono uses specific character variants and custom metrics to closely match Berkeley Mono's aesthetic.
 
 **Custom metrics** — vertical proportions, letter spacing, and parenthesis size are tuned to capture Berkeley's compact, geometric feel.
 
@@ -123,16 +170,19 @@ For the full list of configuration choices, see [`private-build-plans.toml`](./p
 The font is built automatically via GitHub Actions on every version tag push. To build locally:
 
 ```bash
-git clone https://github.com/ahatem/IoskeleyMono.git
-git clone --depth 1 https://github.com/be5invis/Iosevka.git
+git clone https://github.com/nsyout/NoisyMono.git
+IOSEVKA_TAG="$(jq -r '.iosevka.tag' NoisyMono/.github/font-toolchain.json)"
+git clone --branch "$IOSEVKA_TAG" --depth 1 https://github.com/be5invis/Iosevka.git
 
-cp IoskeleyMono/private-build-plans.toml Iosevka/
+cp NoisyMono/private-build-plans.toml Iosevka/
 cd Iosevka
-npm install
-npm run build -- contents::IoskeleyMono contents::IoskeleyMonoTerm
+npm ci
+npm run build -- contents::NoisyMono contents::NoisyMonoTerm contents::NoisyMonoNL
 ```
 
-Output will be in `Iosevka/dist/IoskeleyMono/` and `Iosevka/dist/IoskeleyMonoTerm/`.
+Output will be in the corresponding family folders under `Iosevka/dist/`.
+The stable Iosevka tag used by releases is recorded in
+`.github/font-toolchain.json`.
 
 ---
 
@@ -140,18 +190,18 @@ Output will be in `Iosevka/dist/IoskeleyMono/` and `Iosevka/dist/IoskeleyMonoTer
 
 This project is just a build configuration on top of Iosevka — changes are often just a few lines in `private-build-plans.toml`. If you spot something off or have an idea, open an issue or send a PR. All contributions are welcome!
 
----
-
-## Support
-
-If Ioskeley Mono saves you money on a font license, consider buying me a coffee — it keeps the project going!
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ahmedhatem-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/ahmedhatem)
+Fork release and upstream-sync notes live in
+[`MAINTAINING.md`](MAINTAINING.md).
 
 ---
 
 ## License & Credits
 
-Ioskeley Mono is a custom configuration of [Iosevka](https://github.com/be5invis/Iosevka). All credit for the original design and build system goes to [Belleve Invis](https://github.com/be5invis) and the Iosevka contributors.
+Noisy Mono descends from
+[Ioskeley Mono](https://github.com/ahatem/IoskeleyMono) by Ahmed Hatem and is
+built with [Iosevka](https://github.com/be5invis/Iosevka) by Renzhi Li
+(Belleve Invis) and its contributors. No endorsement by either upstream project
+is implied.
 
-Licensed under the [SIL Open Font License 1.1](./LICENSE).
+Licensed under the [SIL Open Font License 1.1](./LICENSE). See
+[`FONTLOG.txt`](./FONTLOG.txt) for lineage and modification history.

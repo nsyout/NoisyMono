@@ -23,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Include license and lineage
+        run: cp LICENSE FONTLOG.txt site/
+
       - name: Upload site folder as Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -1,0 +1,34 @@
+FONTLOG for Noisy Mono
+======================
+
+Noisy Mono is an independently maintained Modified Version of Ioskeley Mono,
+which is itself a custom build of Iosevka.
+
+Copyright and lineage
+---------------------
+
+- Iosevka: Copyright (c) 2015-2026, Renzhi Li (Belleve Invis) and
+  contributors. https://github.com/be5invis/Iosevka
+- Ioskeley Mono: Copyright (c) 2025, Ahmed Hatem.
+  https://github.com/ahatem/IoskeleyMono
+- Noisy Mono modifications: Copyright (c) 2026, Noisy Mono contributors.
+  https://github.com/nsyout/NoisyMono
+
+No Reserved Font Name is declared by this project at this time.
+
+2026-07-23 — Initial Noisy Mono fork
+------------------------------------
+
+- Renamed the project, installed font families, build plans, artifacts, CSS,
+  website, and release workflow to Noisy Mono.
+- Pinned stable Iosevka, Nerd Fonts, and FontTools versions for reproducible
+  releases.
+- Added curated, feature-preserving WOFF2 subsets and retained a separate
+  full-glyph web archive.
+- Changed the Term family to strict Fontconfig-compatible spacing and enabled
+  exported glyph names for Kitty programming ligatures.
+- Patched Nerd Font variants in single-cell Mono mode and validated their
+  fixed-pitch metadata.
+- Documented the existing OpenType slashed-zero feature.
+
+No endorsement by the Iosevka or Ioskeley Mono authors is implied.

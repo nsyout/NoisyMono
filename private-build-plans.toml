@@ -1,11 +1,11 @@
-[buildPlans.IoskeleyMono]
-family = "Ioskeley Mono"
+[buildPlans.NoisyMono]
+family = "Noisy Mono"
 spacing = "normal"
 serifs = "sans"
 noCvSs = true
 exportGlyphNames = false
 
-[buildPlans.IoskeleyMono.variants.design]
+[buildPlans.NoisyMono.variants.design]
 one = "no-base"
 two = "straight-neck-serifless"
 three = "flat-top-serifless"
@@ -107,52 +107,52 @@ lig-single-arrow-bar = "without-notch"
 #   800 ExtraBold · 900 Black
 # ============================================================
 
-[buildPlans.IoskeleyMono.weights.Thin]
+[buildPlans.NoisyMono.weights.Thin]
 shape = 100
 menu = 100
 css = 100
 
-[buildPlans.IoskeleyMono.weights.ExtraLight]
+[buildPlans.NoisyMono.weights.ExtraLight]
 shape = 200
 menu = 200
 css = 200
 
-[buildPlans.IoskeleyMono.weights.Light]
+[buildPlans.NoisyMono.weights.Light]
 shape = 300
 menu = 300
 css = 300
 
-[buildPlans.IoskeleyMono.weights.SemiLight]
+[buildPlans.NoisyMono.weights.SemiLight]
 shape = 350
 menu = 350
 css = 350
 
-[buildPlans.IoskeleyMono.weights.Regular]
+[buildPlans.NoisyMono.weights.Regular]
 shape = 400
 menu = 400
 css = 400
 
-[buildPlans.IoskeleyMono.weights.Medium]
+[buildPlans.NoisyMono.weights.Medium]
 shape = 500
 menu = 500
 css = 500
 
-[buildPlans.IoskeleyMono.weights.SemiBold]
+[buildPlans.NoisyMono.weights.SemiBold]
 shape = 600
 menu = 600
 css = 600
 
-[buildPlans.IoskeleyMono.weights.Bold]
+[buildPlans.NoisyMono.weights.Bold]
 shape = 700
 menu = 700
 css = 700
 
-[buildPlans.IoskeleyMono.weights.ExtraBold]
+[buildPlans.NoisyMono.weights.ExtraBold]
 shape = 800
 menu = 800
 css = 800
 
-[buildPlans.IoskeleyMono.weights.Black]
+[buildPlans.NoisyMono.weights.Black]
 shape = 900
 menu = 900
 css = 900
@@ -165,17 +165,17 @@ css = 900
 #   100 = Normal       → shape 600
 # ============================================================
 
-[buildPlans.IoskeleyMono.widths.Condensed]
+[buildPlans.NoisyMono.widths.Condensed]
 shape = 480
 menu = 3
 css = "condensed"
 
-[buildPlans.IoskeleyMono.widths.SemiCondensed]
+[buildPlans.NoisyMono.widths.SemiCondensed]
 shape = 540
 menu = 4
 css = "semi-condensed"
 
-[buildPlans.IoskeleyMono.widths.Normal]
+[buildPlans.NoisyMono.widths.Normal]
 shape = 600
 menu = 5
 css = "normal"
@@ -184,13 +184,13 @@ css = "normal"
 # SLOPES
 # ============================================================
 
-[buildPlans.IoskeleyMono.slopes.Upright]
+[buildPlans.NoisyMono.slopes.Upright]
 angle = 0
 shape = "upright"
 menu = "upright"
 css = "normal"
 
-[buildPlans.IoskeleyMono.slopes.Italic]
+[buildPlans.NoisyMono.slopes.Italic]
 angle = 11.8
 shape = "italic"
 menu = "italic"
@@ -200,7 +200,7 @@ css = "italic"
 # METRICS
 # ============================================================
 
-[buildPlans.IoskeleyMono.metricOverride]
+[buildPlans.NoisyMono.metricOverride]
 xHeight = 520
 cap = 690
 ascender = 740
@@ -225,27 +225,27 @@ smallArchDepth = 157
 
 # ============================================================
 # NL VARIANT (No Ligatures)
-# Identical to IoskeleyMono except ligature substitutions are
+# Identical to NoisyMono except ligature substitutions are
 # disabled — for apps that cannot toggle ligatures themselves
 # (e.g. Xcode).
 # ============================================================
 
-[buildPlans.IoskeleyMonoNL]
-family = "Ioskeley Mono NL"
+[buildPlans.NoisyMonoNL]
+family = "Noisy Mono NL"
 spacing = "normal"
 serifs = "sans"
 noCvSs = true
 noLigation = true
 exportGlyphNames = false
 
-weights.inherits = "buildPlans.IoskeleyMono"
-widths.inherits  = "buildPlans.IoskeleyMono"
-slopes.inherits  = "buildPlans.IoskeleyMono"
+weights.inherits = "buildPlans.NoisyMono"
+widths.inherits  = "buildPlans.NoisyMono"
+slopes.inherits  = "buildPlans.NoisyMono"
 
-[buildPlans.IoskeleyMonoNL.variants]
-inherits = "buildPlans.IoskeleyMono"
+[buildPlans.NoisyMonoNL.variants]
+inherits = "buildPlans.NoisyMono"
 
-[buildPlans.IoskeleyMonoNL.metricOverride]
+[buildPlans.NoisyMonoNL.metricOverride]
 xHeight = 520
 cap = 690
 ascender = 740
@@ -270,26 +270,26 @@ smallArchDepth = 157
 
 # ============================================================
 # TERM VARIANT
-# Identical to IoskeleyMono except spacing = "term", which
-# fixes arrow and box-drawing rendering in terminals (kitty,
-# Ghostty, etc.) that don't honour the normal cell width.
+# Uses strict Fontconfig-compatible spacing so every non-combining
+# glyph has one cell width. Exported glyph names are required for
+# programming ligatures in Kitty.
 # ============================================================
 
-[buildPlans.IoskeleyMonoTerm]
-family = "Ioskeley Mono Term"
-spacing = "term"
+[buildPlans.NoisyMonoTerm]
+family = "Noisy Mono Term"
+spacing = "fontconfig-mono"
 serifs = "sans"
 noCvSs = true
-exportGlyphNames = false
+exportGlyphNames = true
 
-weights.inherits = "buildPlans.IoskeleyMono"
-widths.inherits  = "buildPlans.IoskeleyMono"
-slopes.inherits  = "buildPlans.IoskeleyMono"
+weights.inherits = "buildPlans.NoisyMono"
+widths.inherits  = "buildPlans.NoisyMono"
+slopes.inherits  = "buildPlans.NoisyMono"
 
-[buildPlans.IoskeleyMonoTerm.variants]
-inherits = "buildPlans.IoskeleyMono"
+[buildPlans.NoisyMonoTerm.variants]
+inherits = "buildPlans.NoisyMono"
 
-[buildPlans.IoskeleyMonoTerm.metricOverride]
+[buildPlans.NoisyMonoTerm.metricOverride]
 xHeight = 520
 cap = 690
 ascender = 740
