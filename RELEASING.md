@@ -9,14 +9,16 @@ font version.
 
 Do not reuse or push inherited Ioskeley Mono tags.
 
-## What the release workflow does
+## What the release workflows do
 
-The `Build and Release Font` workflow has two intentionally different modes:
+The release is deliberately split so an accepted font build is never repeated:
 
-- A manual run builds and validates a private Actions artifact. It creates no
-  tag and no GitHub Release.
-- Pushing a valid `vX.Y.Z` tag rebuilds and validates the same archive contract,
-  then publishes a GitHub Release.
+- `Build Release Candidate` is a manual workflow that builds and validates a
+  private Actions artifact. It creates no tag and no GitHub Release.
+- `Publish Validated Release` runs when a valid `vX.Y.Z` tag is pushed. It
+  locates the unexpired successful candidate for the exact tagged commit and
+  version, verifies its checksums, reruns the 720-font release validator, and
+  publishes those same files. It does not rebuild Iosevka or patch fonts again.
 
 Every successful run preserves:
 
@@ -155,8 +157,10 @@ git tag -a v1.0.0 ACCEPTED_COMMIT_SHA -m "Noisy Mono v1.0.0"
 git push origin v1.0.0
 ```
 
-The tag build must pass the same validator before the release step runs. Stable
-tags become the latest release; hyphenated versions are marked prerelease.
+The lightweight publication workflow must find the accepted candidate from the
+exact tagged commit. Candidate artifacts are retained for 14 days, so publish
+before the accepted artifact expires. Stable tags become the latest release;
+hyphenated versions are marked prerelease.
 
 Never move or reuse a pushed release tag.
 
@@ -182,8 +186,10 @@ After the tag workflow succeeds:
 - A ttfautohint `0x08` or `broken table` error is not a concurrency symptom.
   Confirm that normalization ran and test the exact failing face with its
   `.ttfa.txt` control file.
-- If a tag workflow fails before publishing and the source is unchanged, rerun
-  the failed workflow.
+- If publication cannot find an unexpired candidate and the source is
+  unchanged, build a new candidate for the tagged commit and version, then
+  rerun the failed publication workflow. Do not rebuild merely because the
+  publication job itself had a transient failure.
 - If code must change after a tag was pushed, do not move the tag. Use the next
   prerelease or patch version.
 - If a bad public release exists, document the problem immediately and publish

@@ -1,11 +1,6 @@
-name: Build and Release Font
+name: Build Release Candidate
 
-# Triggered by version tags (e.g. v1.0.0)
-# To release: git tag v1.0.0 && git push origin v1.0.0
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
     inputs:
       version:
@@ -22,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     permissions:
-      contents: write
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -211,44 +206,3 @@ jobs:
             NoisyMono-Web-Full.zip
             SHA256SUMS
             release-manifest.json
-
-      - name: Create Release and Upload Assets
-        if: github.event_name == 'push'
-        uses: softprops/action-gh-release@v3.0.2
-        with:
-          tag_name: ${{ steps.vars.outputs.tag }}
-          name: "Noisy Mono ${{ steps.vars.outputs.tag }}"
-          generate_release_notes: true
-          prerelease: ${{ contains(steps.vars.outputs.tag, '-') }}
-          make_latest: ${{ !contains(steps.vars.outputs.tag, '-') }}
-          fail_on_unmatched_files: true
-          preserve_order: true
-          body: |
-            ### Downloads
-
-            | Situation | Download |
-            |---|---|
-            | Editor / IDE | `NoisyMono.zip` |
-            | Terminal with icons | `NoisyMono-NerdFont.zip` |
-            | Terminal rendering issues | `NoisyMono-Term.zip` |
-            | Terminal icons + rendering issues | `NoisyMono-Term-NerdFont.zip` |
-            | App that can't disable ligatures | `NoisyMono-NL.zip` |
-            | Same + Nerd Font icons | `NoisyMono-NL-NerdFont.zip` |
-            | Web (curated Latin/technical subsets + CSS) | `NoisyMono-Web.zip` |
-            | Web (complete glyph repertoire) | `NoisyMono-Web-Full.zip` |
-
-            Verify downloaded archives with `SHA256SUMS`. Exact source and
-            toolchain provenance are recorded in `release-manifest.json`.
-          files: |
-            NoisyMono.zip
-            NoisyMono-NerdFont.zip
-            NoisyMono-Term.zip
-            NoisyMono-Term-NerdFont.zip
-            NoisyMono-NL.zip
-            NoisyMono-NL-NerdFont.zip
-            NoisyMono-Web.zip
-            NoisyMono-Web-Full.zip
-            SHA256SUMS
-            release-manifest.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

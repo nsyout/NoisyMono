@@ -1,0 +1,161 @@
+name: Publish Validated Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: font-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v7.0.1
+
+      - name: Validate release tag
+        id: vars
+        run: |
+          set -euo pipefail
+
+          tag="$GITHUB_REF_NAME"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release version: $tag" >&2
+            exit 1
+          fi
+
+          source_sha="$(git rev-parse 'HEAD^{commit}')"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "candidate_name=NoisyMono-${tag}-candidate" >> "$GITHUB_OUTPUT"
+
+      - name: Find validated candidate
+        id: candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_NAME: ${{ steps.vars.outputs.candidate_name }}
+          SOURCE_SHA: ${{ steps.vars.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+
+          runs_json="$(
+            gh api --method GET \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/build-font.yml/runs" \
+              -f event=workflow_dispatch \
+              -f status=success \
+              -f head_sha="$SOURCE_SHA" \
+              -f per_page=100
+          )"
+          run_id="$(
+            jq -r --arg sha "$SOURCE_SHA" \
+              '[.workflow_runs[] | select(.head_sha == $sha)] | first | .id // empty' \
+              <<< "$runs_json"
+          )"
+          if [[ -z "$run_id" ]]; then
+            echo "No successful candidate run found for $SOURCE_SHA" >&2
+            exit 1
+          fi
+
+          artifacts_json="$(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts"
+          )"
+          artifact_id="$(
+            jq -r --arg name "$CANDIDATE_NAME" \
+              '[.artifacts[] | select(.name == $name and .expired == false)] |
+               first | .id // empty' \
+              <<< "$artifacts_json"
+          )"
+          if [[ -z "$artifact_id" ]]; then
+            echo "Run $run_id has no unexpired $CANDIDATE_NAME artifact" >&2
+            exit 1
+          fi
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "Using candidate run $run_id for $SOURCE_SHA"
+
+      - name: Download validated candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_NAME: ${{ steps.vars.outputs.candidate_name }}
+          RUN_ID: ${{ steps.candidate.outputs.run_id }}
+        run: |
+          gh run download "$RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$CANDIDATE_NAME" \
+            --dir release-candidate
+
+      - name: Load pinned validation toolchain
+        id: toolchain
+        run: |
+          manifest=".github/font-toolchain.json"
+          {
+            echo "fonttools_version=$(jq -r '.fontTools.version' "$manifest")"
+            echo "python_version=$(jq -r '.runtime.python' "$manifest")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ steps.toolchain.outputs.python_version }}
+
+      - name: Install validation tooling
+        run: |
+          python -m pip install \
+            "fonttools[woff]==${{ steps.toolchain.outputs.fonttools_version }}"
+
+      - name: Revalidate candidate
+        run: |
+          set -euo pipefail
+          cd release-candidate
+          sha256sum --check SHA256SUMS
+          python ../scripts/validate-release.py . \
+            --version "${{ steps.vars.outputs.tag }}" \
+            --source-sha "${{ steps.vars.outputs.source_sha }}"
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v3.0.2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: "Noisy Mono ${{ steps.vars.outputs.tag }}"
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.vars.outputs.tag, '-') }}
+          make_latest: ${{ !contains(steps.vars.outputs.tag, '-') }}
+          fail_on_unmatched_files: true
+          preserve_order: true
+          body: |
+            ### Downloads
+
+            | Situation | Download |
+            |---|---|
+            | Editor / IDE | `NoisyMono.zip` |
+            | Terminal with icons | `NoisyMono-NerdFont.zip` |
+            | Terminal rendering issues | `NoisyMono-Term.zip` |
+            | Terminal icons + rendering issues | `NoisyMono-Term-NerdFont.zip` |
+            | App that can't disable ligatures | `NoisyMono-NL.zip` |
+            | Same + Nerd Font icons | `NoisyMono-NL-NerdFont.zip` |
+            | Web (curated Latin/technical subsets + CSS) | `NoisyMono-Web.zip` |
+            | Web (complete glyph repertoire) | `NoisyMono-Web-Full.zip` |
+
+            Verify downloaded archives with `SHA256SUMS`. Exact source and
+            toolchain provenance are recorded in `release-manifest.json`.
+          files: |
+            release-candidate/NoisyMono.zip
+            release-candidate/NoisyMono-NerdFont.zip
+            release-candidate/NoisyMono-Term.zip
+            release-candidate/NoisyMono-Term-NerdFont.zip
+            release-candidate/NoisyMono-NL.zip
+            release-candidate/NoisyMono-NL-NerdFont.zip
+            release-candidate/NoisyMono-Web.zip
+            release-candidate/NoisyMono-Web-Full.zip
+            release-candidate/SHA256SUMS
+            release-candidate/release-manifest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

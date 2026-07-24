@@ -49,8 +49,9 @@ Do not edit generated fonts or `site/css/fonts.css` by hand.
 - `site/` is the static GitHub Pages showcase.
 - `assets/` contains images rendered by the README.
 - `webfonts/README.md` is included in the curated web archive.
-- `.github/workflows/build-font.yml` builds candidates and publishes tagged
-  releases.
+- `.github/workflows/build-font.yml` builds and preserves validated candidates.
+- `.github/workflows/publish-release.yml` promotes the exact accepted candidate
+  for a signed release tag without rebuilding it.
 - `.github/workflows/check-font-dependencies.yml` reports stable dependency
   updates without applying them.
 - `.github/workflows/deploy-pages.yml` deploys the tracked `site/` directory.
