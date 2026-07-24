@@ -1,28 +1,28 @@
-// Kintsugi Dark Flared Prism theme
-const kintsugiTheme = `
+// Flexoki Prism theme — token colors follow the active light/dark palette.
+const flexokiTheme = `
 code[class*="language-"], pre[class*="language-"] {
-  color: #BCAC8F; background: none; text-shadow: none;
+  color: var(--text); background: none; text-shadow: none;
   font-family: inherit; font-size: inherit;
 }
 pre[class*="language-"]::-moz-selection, pre[class*="language-"] ::-moz-selection,
 code[class*="language-"]::-moz-selection, code[class*="language-"] ::-moz-selection {
-  text-shadow: none; background: #6c7a8a30;
+  text-shadow: none; background: var(--selection);
 }
 pre[class*="language-"]::selection, pre[class*="language-"] ::selection,
 code[class*="language-"]::selection, code[class*="language-"] ::selection {
-  text-shadow: none; background: #6c7a8a30;
+  text-shadow: none; background: var(--selection);
 }
-.token.comment, .token.prolog, .token.doctype, .token.cdata { color: #5f5f5f; }
-.token.punctuation { color: #7f7b66; }
+.token.comment, .token.prolog, .token.doctype, .token.cdata { color: var(--text-faint); }
+.token.punctuation { color: var(--text-2); }
 .token.property, .token.tag, .token.boolean, .token.number,
-.token.constant, .token.symbol, .token.deleted { color: #DB9833; }
+.token.constant, .token.symbol, .token.deleted { color: var(--orange); }
 .token.selector, .token.attr-name, .token.string, .token.char,
-.token.builtin, .token.inserted { color: #cc7f66; }
+.token.builtin, .token.inserted { color: var(--green); }
 .token.operator, .token.entity, .token.url,
-.language-css .token.string, .style .token.string { color: #E08542; }
-.token.atrule, .token.attr-value, .token.keyword { color: #D66848; font-weight: bold; }
-.token.function, .token.class-name { color: #798283; }
-.token.regex, .token.important, .token.variable { color: #DBAD49; }
+.language-css .token.string, .style .token.string { color: var(--cyan); }
+.token.atrule, .token.attr-value, .token.keyword { color: var(--magenta); font-weight: bold; }
+.token.function, .token.class-name { color: var(--blue); }
+.token.regex, .token.important, .token.variable { color: var(--purple); }
 .token.important, .token.bold { font-weight: bold; }
 .token.italic { font-style: italic; }
 .token.entity { cursor: help; }
@@ -30,7 +30,7 @@ code[class*="language-"]::selection, code[class*="language-"] ::selection {
 
 (function() {
   const s = document.createElement('style');
-  s.textContent = kintsugiTheme;
+  s.textContent = flexokiTheme;
   document.head.appendChild(s);
   document.getElementById('prism-theme')?.remove();
 })();

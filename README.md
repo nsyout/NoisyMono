@@ -115,20 +115,8 @@ terminal and fixed-width font pickers.
 
 ### Slashed zero
 
-The default zero is dotted. A slashed zero is already included through the
-OpenType `zero` feature, so a separate font build is unnecessary:
-
-```css
-code {
-  font-feature-settings: "zero" 1;
-}
-```
-
-In Ghostty:
-
-```ini
-font-feature = zero
-```
+The slashed zero is the default glyph in every Noisy Mono build. No OpenType
+feature or application-specific setting is required.
 
 ---
 
@@ -159,7 +147,7 @@ Noisy Mono uses specific character variants and custom metrics to closely match 
 
 **Custom metrics** — vertical proportions, letter spacing, and parenthesis size are tuned to capture Berkeley's compact, geometric feel.
 
-**Distinctive glyphs** — single-storey `g`, flat-arc parentheses `()`, two-circle `8`, dotted `0`, open-contour `6` and `9`, square punctuation dots, and a raised underscore.
+**Distinctive glyphs** — single-storey `g`, flat-arc parentheses `()`, two-circle `8`, slashed `0`, open-contour `6` and `9`, square punctuation dots, and a raised underscore.
 
 For the full list of configuration choices, see [`private-build-plans.toml`](./private-build-plans.toml).
 
