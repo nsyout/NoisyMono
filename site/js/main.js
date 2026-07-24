@@ -40,14 +40,6 @@ code[class*="language-"]::selection, code[class*="language-"] ::selection {
 const widthOpts = document.querySelectorAll('#width-switcher .seg-opt');
 const WIDTH_KEY = 'noisy-mono-width';
 
-(function initWidth() {
-  const saved = localStorage.getItem(WIDTH_KEY);
-  if (saved) {
-    const btn = document.querySelector(`.seg-opt[data-width="${saved}"]`);
-    if (btn) btn.click();
-  }
-})();
-
 function applyWidth(width) {
   document.documentElement.classList.remove('sc', 'condensed');
   if (width === 'sc') document.documentElement.classList.add('sc');
@@ -66,6 +58,18 @@ widthOpts.forEach(btn => {
     });
   });
 });
+
+(function initWidth() {
+  const saved = localStorage.getItem(WIDTH_KEY);
+  const btn = saved
+    ? document.querySelector(`.seg-opt[data-width="${saved}"]`)
+    : null;
+  if (!btn) return;
+
+  widthOpts.forEach(option => option.classList.remove('active'));
+  btn.classList.add('active');
+  applyWidth(saved);
+})();
 
 // ── Try It editor ─────────────────────────────────────────────────────
 

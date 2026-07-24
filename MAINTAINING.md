@@ -30,7 +30,8 @@ product:
 |---|---|
 | Character variants, metrics, families, weights, widths, slopes | [`private-build-plans.toml`](private-build-plans.toml) |
 | Iosevka, Nerd Fonts, FontTools, and runtime pins | [`.github/font-toolchain.json`](.github/font-toolchain.json) |
-| Release archive construction | [`.github/workflows/build-font.yml`](.github/workflows/build-font.yml) |
+| Release orchestration | [`.github/workflows/build-font.yml`](.github/workflows/build-font.yml) |
+| Font normalization, hinting, patching, and packaging | [`scripts/`](scripts) |
 | Release archive contract | [`scripts/validate-release.py`](scripts/validate-release.py) |
 | Curated web glyph ranges | [`scripts/subset-webfonts.sh`](scripts/subset-webfonts.sh) |
 | Generated webfont CSS | [`scripts/generate-webfont-css.py`](scripts/generate-webfont-css.py) |
@@ -70,12 +71,49 @@ git diff --check
 The site-font checks intentionally fail if `site/fonts` has not yet been synced
 from the current pinned build.
 
-Local font builds are optional and are not release artifacts. They are useful
-when a design change needs a short feedback loop, but the accepted candidate
-must be produced by `.github/workflows/build-font.yml` so its operating system,
-toolchain, timestamps, validation, and provenance are consistent. Iosevka
-command concurrency is deliberately capped in CI because each command job can
-consume more than 1 GiB at peak.
+The accepted release artifact must still be produced by
+`.github/workflows/build-font.yml`, so its operating system, pinned runtime,
+timestamps, and provenance are consistent. However, any change to the build
+plan, dependency pins, font-processing scripts, archive layout, or release
+workflow must pass a complete local candidate before consuming Actions time.
+
+## Complete local release preflight
+
+Use an empty temporary work directory and the exact versions in
+`.github/font-toolchain.json`. The local machine needs Node.js, Python with the
+pinned `fonttools[woff]`, `ttfautohint`, FontForge, `curl`, `jq`, and `zip`.
+Download Nerd Fonts' `FontPatcher.zip` at the pinned tag and verify its SHA-256
+against the manifest before extracting it.
+
+The local pipeline is the same sequence used by Actions:
+
+1. Clone the pinned Iosevka tag and copy `private-build-plans.toml` into it.
+2. Run `npm ci`, then build `ttf-unhinted` for all three families and
+   `woff2-unhinted` for Noisy Mono with `--jCmd=2`.
+3. Run `scripts/normalize-ttf.py` on all three `TTF-Unhinted` directories.
+4. Run `scripts/hint-ttf.py IOSEVKA_ROOT`, then
+   `scripts/convert-ttf-to-woff2.py` for Noisy Mono's hinted TTF directory.
+5. Run `scripts/validate-build-output.py IOSEVKA_ROOT`. It must report 180
+   hinted and unhinted TTF faces and 120 full-glyph WOFF2 faces.
+6. Run `scripts/patch-nerd-fonts.py IOSEVKA_ROOT PATCHER OUTPUT_ROOT`, then
+   `scripts/finalize-nerd-fonts.py` on the three patched directories.
+7. Build the curated web directory with `scripts/subset-webfonts.sh`,
+   `scripts/generate-webfont-css.py`, and `scripts/validate-webfonts.py`.
+8. Package the curated directory with `scripts/package-directory.py` and the
+   other seven archives with `scripts/package-release-archives.py`.
+9. Run `scripts/validate-release.py` with the intended version and source SHA,
+   write `release-manifest.json` and `SHA256SUMS`, then verify the checksums
+   independently.
+
+Do not launch an Actions candidate if any local step fails. The local archives
+are diagnostic preflight output, not publishable release assets.
+
+The TrueType normalization step is intentional. Iosevka 34.7.0 emits compact
+records for `uni221D` and `infinity` that ttfautohint 1.8.4 rejects as a broken
+table. The script forces canonical FontTools encoding and refuses the result
+unless glyph order, cmap entries, outlines, and horizontal metrics are
+identical. Do not remove this step merely because unhinted fonts open in an
+application.
 
 ## Changing the font design
 

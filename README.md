@@ -63,8 +63,9 @@ The complete configuration is in
 
 ## Building from Source
 
-Release builds use the Iosevka version pinned in
-[`.github/font-toolchain.json`](.github/font-toolchain.json).
+Release builds use the versions pinned in
+[`.github/font-toolchain.json`](.github/font-toolchain.json). Install Node.js,
+Python with `fonttools[woff]`, and `ttfautohint`, then:
 
 ```bash
 git clone https://github.com/nsyout/NoisyMono.git
@@ -74,10 +75,27 @@ git clone --branch "$IOSEVKA_TAG" --depth 1 https://github.com/be5invis/Iosevka.
 cp NoisyMono/private-build-plans.toml Iosevka/
 cd Iosevka
 npm ci
-npm run build -- contents::NoisyMono contents::NoisyMonoTerm contents::NoisyMonoNL
+npm run build -- \
+  --jCmd=2 \
+  ttf-unhinted::NoisyMono \
+  ttf-unhinted::NoisyMonoTerm \
+  ttf-unhinted::NoisyMonoNL \
+  woff2-unhinted::NoisyMono
+
+cd ../NoisyMono
+python3 scripts/normalize-ttf.py \
+  ../Iosevka/dist/NoisyMono/TTF-Unhinted \
+  ../Iosevka/dist/NoisyMonoTerm/TTF-Unhinted \
+  ../Iosevka/dist/NoisyMonoNL/TTF-Unhinted
+python3 scripts/hint-ttf.py ../Iosevka
+python3 scripts/convert-ttf-to-woff2.py \
+  ../Iosevka/dist/NoisyMono/TTF \
+  ../Iosevka/dist/NoisyMono/WOFF2
+python3 scripts/validate-build-output.py ../Iosevka
 ```
 
-The generated families are written beneath `Iosevka/dist/`.
+The generated families are written beneath `Iosevka/dist/`. The complete local
+candidate and publication procedure is in [`RELEASING.md`](RELEASING.md).
 
 ## Contributing
 

@@ -100,27 +100,32 @@ jobs:
           cd iosevka-src
           npm ci
           # Each Iosevka command job can exceed 1 GiB at peak. Keep enough
-          # headroom for ttfautohint and the runner instead of using every CPU.
+          # headroom for the runner instead of using every CPU.
           npm run build -- \
             --jCmd=2 \
-            contents::NoisyMono \
-            contents::NoisyMonoTerm \
-            contents::NoisyMonoNL
+            ttf-unhinted::NoisyMono \
+            ttf-unhinted::NoisyMonoTerm \
+            ttf-unhinted::NoisyMonoNL \
+            woff2-unhinted::NoisyMono
+
+      - name: Normalize TrueType glyph records
+        run: |
+          python scripts/normalize-ttf.py \
+            iosevka-src/dist/NoisyMono/TTF-Unhinted \
+            iosevka-src/dist/NoisyMonoTerm/TTF-Unhinted \
+            iosevka-src/dist/NoisyMonoNL/TTF-Unhinted
+
+      - name: Hint normalized desktop fonts
+        run: python scripts/hint-ttf.py iosevka-src
+
+      - name: Build hinted full-glyph webfonts
+        run: |
+          python scripts/convert-ttf-to-woff2.py \
+            iosevka-src/dist/NoisyMono/TTF \
+            iosevka-src/dist/NoisyMono/WOFF2
 
       - name: Verify build output
-        run: |
-          if [ ! -d "iosevka-src/dist/NoisyMono/TTF" ] || [ ! -d "iosevka-src/dist/NoisyMono/WOFF2" ]; then
-            echo "NoisyMono build output not found!"
-            exit 1
-          fi
-          if [ ! -d "iosevka-src/dist/NoisyMonoTerm/TTF" ]; then
-            echo "NoisyMonoTerm build output not found!"
-            exit 1
-          fi
-          if [ ! -d "iosevka-src/dist/NoisyMonoNL/TTF" ]; then
-            echo "NoisyMonoNL build output not found!"
-            exit 1
-          fi
+        run: python scripts/validate-build-output.py iosevka-src
 
       - name: Download Nerd Fonts patcher
         run: |
@@ -138,55 +143,10 @@ jobs:
       #   Condensed     → NoisyMono-Condensed{Weight}.ttf
       - name: Patch fonts with Nerd Font glyphs
         run: |
-          mkdir -p patched-fonts/Normal patched-fonts/SemiCondensed patched-fonts/Condensed
-          mkdir -p patched-fonts-term/Normal patched-fonts-term/SemiCondensed patched-fonts-term/Condensed
-          mkdir -p patched-fonts-nl/Normal patched-fonts-nl/SemiCondensed patched-fonts-nl/Condensed
-          DIST="iosevka-src/dist/NoisyMono/TTF"
-          DIST_TERM="iosevka-src/dist/NoisyMonoTerm/TTF"
-          DIST_NL="iosevka-src/dist/NoisyMonoNL/TTF"
-          PATCHER="nerd-fonts-patcher/font-patcher"
-
-          for font in "$DIST"/NoisyMono-SemiCondensed*.ttf; do
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts/SemiCondensed
-          done
-
-          for font in "$DIST"/NoisyMono-Condensed*.ttf; do
-            [[ "$font" == *SemiCondensed* ]] && continue
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts/Condensed
-          done
-
-          for font in "$DIST"/NoisyMono-*.ttf; do
-            [[ "$font" == *Condensed* ]] && continue
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts/Normal
-          done
-
-          for font in "$DIST_TERM"/NoisyMonoTerm-SemiCondensed*.ttf; do
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts-term/SemiCondensed
-          done
-
-          for font in "$DIST_TERM"/NoisyMonoTerm-Condensed*.ttf; do
-            [[ "$font" == *SemiCondensed* ]] && continue
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts-term/Condensed
-          done
-
-          for font in "$DIST_TERM"/NoisyMonoTerm-*.ttf; do
-            [[ "$font" == *Condensed* ]] && continue
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts-term/Normal
-          done
-
-          for font in "$DIST_NL"/NoisyMonoNL-SemiCondensed*.ttf; do
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts-nl/SemiCondensed
-          done
-
-          for font in "$DIST_NL"/NoisyMonoNL-Condensed*.ttf; do
-            [[ "$font" == *SemiCondensed* ]] && continue
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts-nl/Condensed
-          done
-
-          for font in "$DIST_NL"/NoisyMonoNL-*.ttf; do
-            [[ "$font" == *Condensed* ]] && continue
-            fontforge -script "$PATCHER" "$font" --complete --careful --mono --outputdir patched-fonts-nl/Normal
-          done
+          python scripts/patch-nerd-fonts.py \
+            iosevka-src \
+            nerd-fonts-patcher/font-patcher \
+            .
 
       - name: Finalize and validate Nerd Font metadata
         run: |
@@ -195,95 +155,13 @@ jobs:
             patched-fonts-term \
             patched-fonts-nl
 
-      - name: Package release archives
+      - name: Package desktop and full-glyph Web archives
         run: |
-          set -euo pipefail
-
-          archive_directory() {
-            local source_dir="$1"
-            local archive_name="$2"
-            find "$source_dir" -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
-            (
-              cd "$source_dir"
-              TZ=UTC zip -X -q -r "../${archive_name}" .
-            )
-          }
-
-          DIST="iosevka-src/dist/NoisyMono"
-          DIST_TERM="iosevka-src/dist/NoisyMonoTerm"
-
-          # ── NoisyMono.zip — all widths, TTF hinted + unhinted ──────────
-          mkdir -p pkg/Normal/Hinted      pkg/Normal/Unhinted
-          mkdir -p pkg/SemiCondensed/Hinted pkg/SemiCondensed/Unhinted
-          mkdir -p pkg/Condensed/Hinted   pkg/Condensed/Unhinted
-
-          cp "$DIST"/TTF/NoisyMono-SemiCondensed*.ttf          pkg/SemiCondensed/Hinted/
-          cp "$DIST"/TTF-Unhinted/NoisyMono-SemiCondensed*.ttf pkg/SemiCondensed/Unhinted/
-
-          for f in "$DIST"/TTF/NoisyMono-Condensed*.ttf;          do [[ "$f" == *SemiCondensed* ]] && continue; cp "$f" pkg/Condensed/Hinted/;    done
-          for f in "$DIST"/TTF-Unhinted/NoisyMono-Condensed*.ttf; do [[ "$f" == *SemiCondensed* ]] && continue; cp "$f" pkg/Condensed/Unhinted/;  done
-          for f in "$DIST"/TTF/NoisyMono-*.ttf;                   do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg/Normal/Hinted/;        done
-          for f in "$DIST"/TTF-Unhinted/NoisyMono-*.ttf;          do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg/Normal/Unhinted/;      done
-
-          cp LICENSE FONTLOG.txt pkg/
-          archive_directory pkg NoisyMono.zip
-
-          # ── NoisyMono-NerdFont.zip — all widths, Nerd Font patched ─────
-          mkdir -p pkg-nf/Normal pkg-nf/SemiCondensed pkg-nf/Condensed
-          cp patched-fonts/Normal/*.ttf         pkg-nf/Normal/
-          cp patched-fonts/SemiCondensed/*.ttf  pkg-nf/SemiCondensed/
-          cp patched-fonts/Condensed/*.ttf      pkg-nf/Condensed/
-          cp LICENSE FONTLOG.txt pkg-nf/
-          archive_directory pkg-nf NoisyMono-NerdFont.zip
-
-          # ── NoisyMono-Term.zip — all widths, term spacing ──────────────
-          mkdir -p pkg-term/Normal/Hinted      pkg-term/Normal/Unhinted
-          mkdir -p pkg-term/SemiCondensed/Hinted pkg-term/SemiCondensed/Unhinted
-          mkdir -p pkg-term/Condensed/Hinted   pkg-term/Condensed/Unhinted
-
-          cp "$DIST_TERM"/TTF/NoisyMonoTerm-SemiCondensed*.ttf          pkg-term/SemiCondensed/Hinted/
-          cp "$DIST_TERM"/TTF-Unhinted/NoisyMonoTerm-SemiCondensed*.ttf pkg-term/SemiCondensed/Unhinted/
-
-          for f in "$DIST_TERM"/TTF/NoisyMonoTerm-Condensed*.ttf;          do [[ "$f" == *SemiCondensed* ]] && continue; cp "$f" pkg-term/Condensed/Hinted/;   done
-          for f in "$DIST_TERM"/TTF-Unhinted/NoisyMonoTerm-Condensed*.ttf; do [[ "$f" == *SemiCondensed* ]] && continue; cp "$f" pkg-term/Condensed/Unhinted/; done
-          for f in "$DIST_TERM"/TTF/NoisyMonoTerm-*.ttf;                   do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg-term/Normal/Hinted/;       done
-          for f in "$DIST_TERM"/TTF-Unhinted/NoisyMonoTerm-*.ttf;          do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg-term/Normal/Unhinted/;     done
-
-          cp LICENSE FONTLOG.txt pkg-term/
-          archive_directory pkg-term NoisyMono-Term.zip
-
-          # ── NoisyMono-NL.zip — all widths, no ligatures ────────────────
-          DIST_NL="iosevka-src/dist/NoisyMonoNL"
-          mkdir -p pkg-nl/Normal/Hinted      pkg-nl/Normal/Unhinted
-          mkdir -p pkg-nl/SemiCondensed/Hinted pkg-nl/SemiCondensed/Unhinted
-          mkdir -p pkg-nl/Condensed/Hinted   pkg-nl/Condensed/Unhinted
-
-          cp "$DIST_NL"/TTF/NoisyMonoNL-SemiCondensed*.ttf          pkg-nl/SemiCondensed/Hinted/
-          cp "$DIST_NL"/TTF-Unhinted/NoisyMonoNL-SemiCondensed*.ttf pkg-nl/SemiCondensed/Unhinted/
-
-          for f in "$DIST_NL"/TTF/NoisyMonoNL-Condensed*.ttf;          do [[ "$f" == *SemiCondensed* ]] && continue; cp "$f" pkg-nl/Condensed/Hinted/;   done
-          for f in "$DIST_NL"/TTF-Unhinted/NoisyMonoNL-Condensed*.ttf; do [[ "$f" == *SemiCondensed* ]] && continue; cp "$f" pkg-nl/Condensed/Unhinted/; done
-          for f in "$DIST_NL"/TTF/NoisyMonoNL-*.ttf;                   do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg-nl/Normal/Hinted/;       done
-          for f in "$DIST_NL"/TTF-Unhinted/NoisyMonoNL-*.ttf;          do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg-nl/Normal/Unhinted/;     done
-
-          cp LICENSE FONTLOG.txt pkg-nl/
-          archive_directory pkg-nl NoisyMono-NL.zip
-
-          # ── NoisyMono-Term-NerdFont.zip — term spacing + Nerd Font ─────
-          mkdir -p pkg-term-nf/Normal pkg-term-nf/SemiCondensed pkg-term-nf/Condensed
-          cp patched-fonts-term/Normal/*.ttf         pkg-term-nf/Normal/
-          cp patched-fonts-term/SemiCondensed/*.ttf  pkg-term-nf/SemiCondensed/
-          cp patched-fonts-term/Condensed/*.ttf      pkg-term-nf/Condensed/
-          cp LICENSE FONTLOG.txt pkg-term-nf/
-          archive_directory pkg-term-nf NoisyMono-Term-NerdFont.zip
-
-          # ── NoisyMono-NL-NerdFont.zip — no ligatures + Nerd Font ───────
-          mkdir -p pkg-nl-nf/Normal pkg-nl-nf/SemiCondensed pkg-nl-nf/Condensed
-          cp patched-fonts-nl/Normal/*.ttf         pkg-nl-nf/Normal/
-          cp patched-fonts-nl/SemiCondensed/*.ttf  pkg-nl-nf/SemiCondensed/
-          cp patched-fonts-nl/Condensed/*.ttf      pkg-nl-nf/Condensed/
-          cp LICENSE FONTLOG.txt pkg-nl-nf/
-          archive_directory pkg-nl-nf NoisyMono-NL-NerdFont.zip
+          python scripts/package-release-archives.py \
+            iosevka-src \
+            . \
+            . \
+            --source-date-epoch "$SOURCE_DATE_EPOCH"
 
       - name: Package curated Web archive
         env:
@@ -302,18 +180,10 @@ jobs:
           cp webfonts/README.md pkg-web/README.md
           cp LICENSE pkg-web/LICENSE
           cp FONTLOG.txt pkg-web/FONTLOG.txt
-          find pkg-web -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
-          (cd pkg-web && TZ=UTC zip -X -q -r ../NoisyMono-Web.zip .)
-
-      - name: Package full-glyph Web archive
-        run: |
-          set -euo pipefail
-          mkdir -p pkg-web-full
-          cp -R iosevka-src/dist/NoisyMono/WOFF2 pkg-web-full/
-          cp -R iosevka-src/dist/NoisyMono/WOFF2-Unhinted pkg-web-full/
-          cp LICENSE FONTLOG.txt pkg-web-full/
-          find pkg-web-full -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
-          (cd pkg-web-full && TZ=UTC zip -X -q -r ../NoisyMono-Web-Full.zip .)
+          python scripts/package-directory.py \
+            pkg-web \
+            NoisyMono-Web.zip \
+            --source-date-epoch "$SOURCE_DATE_EPOCH"
 
       - name: Validate complete release candidate
         run: |

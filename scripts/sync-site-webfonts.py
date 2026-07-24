@@ -17,6 +17,8 @@ from fontTools.ttLib import TTFont
 ROOT = Path(__file__).resolve().parents[1]
 SITE_FONT_DIR = ROOT / "site/fonts"
 SITE_FONT_CSS = ROOT / "site/css/fonts.css"
+SITE_MAIN_CSS = ROOT / "site/css/main.css"
+SITE_INDEX = ROOT / "site/index.html"
 VALIDATOR = ROOT / "scripts/validate-webfonts.py"
 CSS_GENERATOR = ROOT / "scripts/generate-webfont-css.py"
 TOOLCHAIN = ROOT / ".github/font-toolchain.json"
@@ -85,6 +87,14 @@ def check() -> None:
             raise RuntimeError(
                 "site/css/fonts.css is stale; rerun sync-site-webfonts.py"
             )
+    index_html = SITE_INDEX.read_text(encoding="utf-8")
+    if 'href="css/fonts.css"' not in index_html:
+        raise RuntimeError("site/index.html does not load css/fonts.css")
+    main_css = SITE_MAIN_CSS.read_text(encoding="utf-8")
+    if "@font-face" in main_css:
+        raise RuntimeError(
+            "site/css/main.css contains legacy @font-face declarations"
+        )
     print(f"Showcase webfonts are current ({version})")
 
 

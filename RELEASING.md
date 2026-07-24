@@ -50,7 +50,19 @@ Do not tag a release until all of these are true:
 
 ## 1. Build a candidate
 
-Run the workflow from GitHub's Actions page, or with the CLI:
+First run the complete local release preflight in
+[`MAINTAINING.md`](MAINTAINING.md). It must produce all eight archives and end
+with:
+
+```text
+Release candidate v1.0.0 is structurally valid (720 fonts)
+```
+
+Verify the generated `SHA256SUMS` locally. These archives are diagnostic and
+must not be uploaded as the release.
+
+Only after local preflight passes, run the workflow from GitHub's Actions page,
+or with the CLI:
 
 ```bash
 gh workflow run build-font.yml \
@@ -67,13 +79,13 @@ gh run watch RUN_ID --exit-status
 
 The manual run does not reserve the version. It is safe to repeat after fixes.
 
-The complete build is intentionally a GitHub Actions workload. Local builds
-are useful for design iteration and diagnosis, but release archives must come
-from the pinned Ubuntu workflow. `Build font` is the longest step and the
-compact `gh run watch` view does not show its live compiler output. A long
-period without a step transition is therefore not evidence that the job is
-stuck. The workflow limits Iosevka command concurrency to keep memory available
-for `ttfautohint` and has a four-hour timeout for genuine runaways.
+The release archives of record must come from the pinned Ubuntu workflow.
+Local preflight exists to catch deterministic source, hinting, patching, and
+packaging failures before CI. `Build font` is the longest step and the compact
+`gh run watch` view does not show its live compiler output. A long period
+without a step transition is therefore not evidence that the job is stuck.
+Iosevka concurrency and Nerd Font patching are deliberately bounded, and the
+job has a four-hour timeout for genuine runaways.
 
 ## 2. Download and verify it
 
@@ -162,9 +174,14 @@ After the tag workflow succeeds:
 ## Failure and recovery
 
 - If a candidate fails, fix the source and rerun the same candidate version.
+- Reproduce the failure and pass the complete local preflight before starting
+  another Actions run.
 - In a failed Iosevka build, find the first real error in the log. The many
   subsequent `Build ... is cancelled` messages are parallel tasks unwinding,
   not separate root causes.
+- A ttfautohint `0x08` or `broken table` error is not a concurrency symptom.
+  Confirm that normalization ran and test the exact failing face with its
+  `.ttfa.txt` control file.
 - If a tag workflow fails before publishing and the source is unchanged, rerun
   the failed workflow.
 - If code must change after a tag was pushed, do not move the tag. Use the next

@@ -16,6 +16,21 @@ Copyright and lineage
 
 No Reserved Font Name is declared by this project at this time.
 
+2026-07-24 — Release pipeline hardening
+----------------------------------------
+
+- Updated the generated families and showcase webfonts to Iosevka 34.7.0.
+- Added a semantics-checked TrueType normalization pass before hinting. This
+  canonicalizes two compact `glyf` records that FreeType rejects while proving
+  that glyph order, cmap entries, outlines, and horizontal metrics are
+  unchanged.
+- Added complete local validation for all 180 hinted and unhinted desktop
+  faces, 120 full-glyph webfonts, 180 Nerd Font faces, and all eight release
+  archives.
+- Made release archive creation deterministic and shared the same build,
+  patching, packaging, and validation scripts between local preflight and
+  GitHub Actions.
+
 2026-07-23 — Initial Noisy Mono fork
 ------------------------------------
 
