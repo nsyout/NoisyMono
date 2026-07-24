@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -18,6 +19,11 @@ FAMILIES = {
 }
 WIDTHS = ("Normal", "SemiCondensed", "Condensed")
 EXPECTED_PER_WIDTH = 20
+FONTFORGE_PYTHON_ENVIRONMENT = (
+    "LD_LIBRARY_PATH",
+    "PYTHONHOME",
+    "PYTHONPATH",
+)
 
 
 def width_for(filename: str) -> str:
@@ -26,6 +32,14 @@ def width_for(filename: str) -> str:
     if "Condensed" in filename:
         return "Condensed"
     return "Normal"
+
+
+def clean_fontforge_environment(environment: dict[str, str]) -> dict[str, str]:
+    """Remove caller-specific Python settings from FontForge's environment."""
+    cleaned = environment.copy()
+    for variable in FONTFORGE_PYTHON_ENVIRONMENT:
+        cleaned.pop(variable, None)
+    return cleaned
 
 
 def main() -> None:
@@ -58,6 +72,12 @@ def main() -> None:
         raise SystemExit(f"FontForge executable not found: {args.fontforge}")
     if not args.patcher.is_file():
         raise SystemExit(f"Nerd Fonts patcher not found: {args.patcher}")
+
+    # FontForge embeds the Python runtime supplied by its own installation.
+    # actions/setup-python exports LD_LIBRARY_PATH for its hosted runtime, which
+    # can make Ubuntu's FontForge combine that runtime with the system stdlib.
+    # Keep caller-specific Python configuration out of every FontForge child.
+    fontforge_environment = clean_fontforge_environment(dict(os.environ))
 
     for family, output_name in FAMILIES.items():
         source = args.iosevka_root / "dist" / family / "TTF"
@@ -108,6 +128,7 @@ def main() -> None:
                 with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as log:
                     result = subprocess.run(
                         command,
+                        env=fontforge_environment,
                         stdout=log,
                         stderr=subprocess.STDOUT,
                     )
