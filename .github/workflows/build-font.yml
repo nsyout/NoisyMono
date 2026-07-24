@@ -20,6 +20,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 240
     permissions:
       contents: write
 
@@ -98,7 +99,13 @@ jobs:
           cp private-build-plans.toml iosevka-src/
           cd iosevka-src
           npm ci
-          npm run build -- contents::NoisyMono contents::NoisyMonoTerm contents::NoisyMonoNL
+          # Each Iosevka command job can exceed 1 GiB at peak. Keep enough
+          # headroom for ttfautohint and the runner instead of using every CPU.
+          npm run build -- \
+            --jCmd=2 \
+            contents::NoisyMono \
+            contents::NoisyMonoTerm \
+            contents::NoisyMonoNL
 
       - name: Verify build output
         run: |

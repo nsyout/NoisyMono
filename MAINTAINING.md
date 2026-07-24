@@ -70,6 +70,13 @@ git diff --check
 The site-font checks intentionally fail if `site/fonts` has not yet been synced
 from the current pinned build.
 
+Local font builds are optional and are not release artifacts. They are useful
+when a design change needs a short feedback loop, but the accepted candidate
+must be produced by `.github/workflows/build-font.yml` so its operating system,
+toolchain, timestamps, validation, and provenance are consistent. Iosevka
+command concurrency is deliberately capped in CI because each command job can
+consume more than 1 GiB at peak.
+
 ## Changing the font design
 
 1. Change `private-build-plans.toml`.

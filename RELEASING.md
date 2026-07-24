@@ -67,6 +67,14 @@ gh run watch RUN_ID --exit-status
 
 The manual run does not reserve the version. It is safe to repeat after fixes.
 
+The complete build is intentionally a GitHub Actions workload. Local builds
+are useful for design iteration and diagnosis, but release archives must come
+from the pinned Ubuntu workflow. `Build font` is the longest step and the
+compact `gh run watch` view does not show its live compiler output. A long
+period without a step transition is therefore not evidence that the job is
+stuck. The workflow limits Iosevka command concurrency to keep memory available
+for `ttfautohint` and has a four-hour timeout for genuine runaways.
+
 ## 2. Download and verify it
 
 ```bash
@@ -154,6 +162,9 @@ After the tag workflow succeeds:
 ## Failure and recovery
 
 - If a candidate fails, fix the source and rerun the same candidate version.
+- In a failed Iosevka build, find the first real error in the log. The many
+  subsequent `Build ... is cancelled` messages are parallel tasks unwinding,
+  not separate root causes.
 - If a tag workflow fails before publishing and the source is unchanged, rerun
   the failed workflow.
 - If code must change after a tag was pushed, do not move the tag. Use the next
