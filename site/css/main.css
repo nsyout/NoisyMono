@@ -401,7 +401,7 @@ strong { font-weight: 600; color: var(--text); }
 .comp-item img {
   width: 100%;
   display: block;
-  aspect-ratio: 11 / 8;
+  aspect-ratio: 341 / 246;
   object-fit: cover;
 }
 .comp-label {
@@ -1221,7 +1221,7 @@ h3 {
 }
 
 .comp-item img {
-  filter: saturate(0.9);
+  filter: none;
 }
 
 .comp-label {

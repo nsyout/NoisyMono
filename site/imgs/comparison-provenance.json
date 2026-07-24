@@ -1,0 +1,24 @@
+{
+  "canvas": {
+    "height": 984,
+    "width": 1364
+  },
+  "fontSettings": "Regular weight with each font's default OpenType features",
+  "fonts": {
+    "BerkeleyMono.png": {
+      "family": "Berkeley Mono",
+      "fullName": "Berkeley Mono Regular",
+      "postScriptName": "BerkeleyMono-Regular",
+      "version": "Version 2.004; ttfautohint (v1.8.4.16-eb64)"
+    },
+    "NoisyMono.png": {
+      "family": "Noisy Mono",
+      "fullName": "Noisy Mono",
+      "postScriptName": "Noisy-Mono",
+      "version": "Version 34.4.0"
+    }
+  },
+  "palette": "Flexoki Dark",
+  "renderer": "macOS Core Text",
+  "source": "scripts/render-comparison.swift"
+}

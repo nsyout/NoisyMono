@@ -23,7 +23,12 @@ See Noisy Mono in action with real-time editable samples, multiple programming l
 | --- | --- |
 | ![Noisy Mono Sample](assets/NoisyMono.png) | ![Berkeley Mono Sample](assets/BerkeleyMono.png) |
 
-> Theme: [Kintsugi Dark Flared](https://marketplace.visualstudio.com/items?itemName=ahmedhatem.kintsugi)
+> Rendered from the same source with the same canvas, size, Flexoki Dark
+> colors, and macOS Core Text renderer. The committed comparison uses Noisy
+> Mono Regular v34.4.0 and a locally licensed Berkeley Mono Regular v2.004;
+> no Berkeley font files are distributed by this repository. Exact render
+> metadata is recorded in
+> [`site/imgs/comparison-provenance.json`](site/imgs/comparison-provenance.json).
 
 ![Noisy Mono in Action](assets/InAction.png)
 
