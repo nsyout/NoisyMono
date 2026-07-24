@@ -1,83 +1,167 @@
 # Maintaining Noisy Mono
 
-## Remotes
+This handbook describes what is authoritative, how the repository fits
+together, and how to make changes without letting the font packages, showcase,
+and documentation drift apart. The release procedure is in
+[`RELEASING.md`](RELEASING.md).
 
-Keep Noisy Mono as `origin` and the original Ioskeley Mono repository as
-fetch-only `upstream`:
+## Project invariants
+
+Every change must preserve these unless the change explicitly revises the
+product:
+
+- The public families are `Noisy Mono`, `Noisy Mono Term`, and `Noisy Mono NL`.
+- Each family has 10 weights, 3 widths, and Upright and Italic styles.
+- The slashed zero is the default glyph.
+- `Noisy Mono` keeps the complete glyph repertoire and programming ligatures.
+- `Noisy Mono Term` uses strict one-cell Fontconfig-compatible spacing.
+- `Noisy Mono NL` contains no ligature substitutions.
+- Nerd Font packages use Mono patching and fixed-pitch metadata.
+- The curated web package contains 60 unhinted WOFF2 faces.
+- The showcase uses the curated webfonts from the same pinned Iosevka build as
+  the next release.
+- No Berkeley Mono font binary is ever committed or distributed.
+- `Ioskeley` may appear only in lineage or historical documentation, never in
+  generated font metadata.
+
+## Sources of truth
+
+| Concern | Authoritative file |
+|---|---|
+| Character variants, metrics, families, weights, widths, slopes | [`private-build-plans.toml`](private-build-plans.toml) |
+| Iosevka, Nerd Fonts, FontTools, and runtime pins | [`.github/font-toolchain.json`](.github/font-toolchain.json) |
+| Release archive construction | [`.github/workflows/build-font.yml`](.github/workflows/build-font.yml) |
+| Release archive contract | [`scripts/validate-release.py`](scripts/validate-release.py) |
+| Curated web glyph ranges | [`scripts/subset-webfonts.sh`](scripts/subset-webfonts.sh) |
+| Generated webfont CSS | [`scripts/generate-webfont-css.py`](scripts/generate-webfont-css.py) |
+| Font lineage and copyright | [`FONTLOG.txt`](FONTLOG.txt) |
+| User-facing package guidance | [`README.md`](README.md) |
+| Showcase implementation | [`site/`](site) |
+
+Do not edit generated fonts or `site/css/fonts.css` by hand.
+
+## Repository map
+
+- `private-build-plans.toml` configures the three Iosevka build plans.
+- `scripts/` contains package validation, web subsetting, site synchronization,
+  Nerd Font finalization, and comparison rendering.
+- `site/` is the static GitHub Pages showcase.
+- `assets/` contains images rendered by the README.
+- `webfonts/README.md` is included in the curated web archive.
+- `.github/workflows/build-font.yml` builds candidates and publishes tagged
+  releases.
+- `.github/workflows/check-font-dependencies.yml` reports stable dependency
+  updates without applying them.
+- `.github/workflows/deploy-pages.yml` deploys the tracked `site/` directory.
+
+## Lightweight local checks
+
+Use Python 3 with `fonttools[woff]` installed. The release workflow uses the
+exact version in `.github/font-toolchain.json`.
 
 ```bash
-git remote add origin https://github.com/nsyout/NoisyMono.git
-git remote add upstream https://github.com/ahatem/IoskeleyMono.git
-git remote set-url --push upstream DISABLED
-git fetch upstream --tags
-git rebase upstream/main
+python3 -m py_compile scripts/*.py
+python3 scripts/validate-webfonts.py site/fonts --expected-count 60
+python3 scripts/sync-site-webfonts.py --check
+node --check site/js/main.js
+git diff --check
 ```
 
-Review upstream changes before rebasing when a release is in progress. Never
-move an existing release tag; publish a new semantic version after rebuilding
-and checking the archives.
+The site-font checks intentionally fail if `site/fonts` has not yet been synced
+from the current pinned build.
 
-## Font toolchain updates
+## Changing the font design
 
-`.github/font-toolchain.json` is the source of truth for the stable Iosevka,
-Nerd Fonts, and FontTools versions used by the release workflow. The Nerd Fonts
-patcher is also pinned by SHA-256 because release assets can be replaced without
-changing their download URL.
+1. Change `private-build-plans.toml`.
+2. Build all three plans, not only `NoisyMono`.
+3. Check all 60 faces per family and both hinted and unhinted desktop output.
+4. Run a release candidate through GitHub Actions.
+5. Inspect Regular, Italic, and Bold in each width.
+6. Test the slashed zero, ambiguous glyphs (`0O`, `1Il`, `gq`), punctuation,
+   operators, box drawing, and combining marks.
+7. Test default ligatures in Noisy Mono and their absence in Noisy Mono NL.
+8. Test Noisy Mono Term in a strict fixed-width picker and Kitty.
+9. Sync the candidate webfonts into the showcase.
+10. Update `FONTLOG.txt` when the generated font changes.
 
-The `Check Stable Font Dependencies` workflow runs weekly and can be dispatched
-manually. It compares the pinned Iosevka and Nerd Fonts tags with GitHub's latest
-non-prerelease releases. When an update exists, it opens or refreshes a single
-issue in this repository; it never creates or updates anything upstream. GitHub
-Issues must be enabled on the fork.
+## Updating pinned dependencies
 
-Do not update these dependencies automatically. For each update:
+The weekly dependency workflow reports updates for Iosevka, Nerd Fonts, and
+FontTools. Updates are always manual.
 
-1. Change one pinned dependency at a time.
-2. Update the Nerd Fonts patcher checksum when its tag changes.
-3. Run the complete build and validation workflow.
-4. Compare archive contents, font names, glyph coverage, metrics, and sizes with
-   the previous release.
-5. Close the dependency issue only after the updated artifacts are accepted.
+1. Update one dependency at a time in `.github/font-toolchain.json`.
+2. Confirm the release is stable rather than a prerelease.
+3. For Nerd Fonts, download `FontPatcher.zip`, calculate its SHA-256, and
+   update `nerdFonts.patcherSha256`.
+4. Read upstream release notes for build-plan, naming, metadata, or patcher
+   changes.
+5. Run a complete candidate; a source parse or one Regular build is
+   insufficient.
+6. Compare archive counts, font names, metrics, glyph coverage, sizes, and
+   rendered specimens with the previous accepted candidate.
+7. Sync the accepted curated webfonts into `site/fonts`.
+8. Record user-visible changes in `FONTLOG.txt`.
 
-## Releases
+Never combine an Iosevka update with unrelated design changes. Keeping them
+separate makes regressions attributable.
 
-The release workflow builds all desktop, terminal, Nerd Font, no-ligature, and
-web variants. A version tag publishes a release; a manual run creates a draft.
+## Keeping the showcase aligned
 
-Before tagging:
+The showcase must use `NoisyMono-Web.zip` from an accepted candidate:
 
-1. Review `private-build-plans.toml` and the generated specimen site.
-2. Run the webfont subsetter against an Iosevka build and inspect its size
-   report.
-3. Confirm the default web archive contains curated, unhinted fonts and CSS.
-4. Confirm the `Web-Full` archive still contains the complete glyph builds.
-5. Confirm every archive contains `LICENSE` and `FONTLOG.txt`.
-6. Test Regular, Italic, and Bold in a browser, including arrows, box drawing,
-   ligatures, slashed zero, numeral styles, and Latin Extended characters.
-7. Confirm every Nerd Font has one nonzero advance width, fixed-pitch `post`
-   metadata, and monospaced Panose metadata.
-8. Test the Term family in Kitty and confirm it appears in a Fontconfig
-   `:mono` query.
+```bash
+unzip NoisyMono-Web.zip -d /tmp/noisy-mono-web
+python3 scripts/sync-site-webfonts.py \
+  --from /tmp/noisy-mono-web/fonts
+python3 scripts/sync-site-webfonts.py --check
+```
 
-## Local decisions informed by upstream reports (2026-07-23)
+The sync script verifies all 60 faces, checks their embedded version against
+the pinned Iosevka tag, replaces `site/fonts`, and regenerates
+`site/css/fonts.css`.
 
-These links are reference material only. Maintenance happens in this fork; do
-not update upstream issues or pull requests as part of the local workflow.
+The side-by-side images are generated with the tracked Noisy Mono Regular
+webfont and a locally licensed Berkeley Mono Regular:
 
-- [Issue #18](https://github.com/ahatem/IoskeleyMono/issues/18): the Term plan
-  exports glyph names for Kitty ligatures.
-- [Issue #19](https://github.com/ahatem/IoskeleyMono/issues/19): the Term plan
-  uses strict Fontconfig-compatible spacing, and Nerd Fonts are patched and
-  validated as Mono families.
-- [Issue #20](https://github.com/ahatem/IoskeleyMono/issues/20): the existing
-  OpenType `zero` feature is documented instead of adding another build.
-- [Issue #21](https://github.com/ahatem/IoskeleyMono/issues/21): variable fonts
-  are not adopted because Iosevka does not support that output.
-- [Issue #22](https://github.com/ahatem/IoskeleyMono/issues/22): curated
-  Latin/technical subsets preserve all applicable OpenType layout features;
-  the full-glyph web archive remains available separately.
-- [PR #23](https://github.com/ahatem/IoskeleyMono/pull/23): the
-  quasi-proportional families are not adopted because they do not implement a
-  variable font and substantially expand the release matrix.
-- [Issue #2](https://github.com/ahatem/IoskeleyMono/issues/2), Homebrew and
-  winget: revisit after the fork has a stable release URL and version history.
+```bash
+python3 scripts/generate-comparison-images.py \
+  --berkeley /path/to/BerkeleyMono-Regular.ttf
+```
+
+The generator writes the two site images, their README copies, and
+`site/imgs/comparison-provenance.json`. It does not copy the Berkeley font.
+
+The Flexoki social card is canonical at both `assets/SocialPreview.png` and
+`site/imgs/SocialPreview.png`. Keep those files identical.
+
+## Working with upstream history
+
+`origin` is Noisy Mono. `upstream` is Ioskeley Mono and is reference-only:
+
+```bash
+git remote -v
+git fetch upstream --tags
+```
+
+Do not rebase `main` wholesale onto upstream and do not push upstream's tags to
+origin. Review upstream commits and port only changes that still apply to Noisy
+Mono's families, validation, documentation, and release contract.
+
+Relevant inherited decisions:
+
+- Term spacing and exported glyph names address strict terminal and Kitty
+  behavior.
+- Nerd Fonts are patched and validated as Mono families.
+- The slashed zero is a build default rather than an application setting.
+- No variable-font package is advertised because the configured Iosevka build
+  does not produce one.
+- Curated and full web archives remain separate.
+
+## Licensing and credits
+
+The formal Iosevka copyright line uses “Renzhi Li (Belleve Invis)” because that
+is the wording in Iosevka's license. Reader-facing copy uses the current public
+identity, Renzhi Li (`be5invis`). Preserve both accurately in their respective
+contexts.
+
+All distributed archives must include `LICENSE` and `FONTLOG.txt`.

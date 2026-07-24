@@ -9,6 +9,11 @@
     "patcherSha256": "a8f11e511ed7c69e96680858c06b50a643ea7752e26d5cd13dd5e5cc53ab1760"
   },
   "fontTools": {
-    "version": "4.59.0"
+    "version": "4.63.0"
+  },
+  "runtime": {
+    "node": "24",
+    "python": "3.12",
+    "runner": "ubuntu-24.04"
   }
 }

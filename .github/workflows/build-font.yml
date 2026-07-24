@@ -9,19 +9,44 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag (e.g. v1.0.0)"
-        required: false
-        default: "v0.0.0-test"
+        description: "Candidate version (e.g. v1.0.0 or v1.0.0-rc.1)"
+        required: true
+        default: "v1.0.0"
+
+concurrency:
+  group: font-release-${{ github.ref }}-${{ inputs.version }}
+  cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
+
+      - name: Set candidate version and reproducible timestamp
+        id: vars
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            tag="${{ inputs.version }}"
+          else
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
+
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release version: $tag" >&2
+            exit 1
+          fi
+
+          source_date_epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "source_date_epoch=$source_date_epoch" >> "$GITHUB_OUTPUT"
+          echo "SOURCE_DATE_EPOCH=$source_date_epoch" >> "$GITHUB_ENV"
 
       - name: Load pinned font toolchain
         id: toolchain
@@ -34,10 +59,12 @@ jobs:
             echo "nerd_fonts_tag=$(jq -r '.nerdFonts.tag' "$manifest")"
             echo "nerd_fonts_patcher_sha256=$(jq -r '.nerdFonts.patcherSha256' "$manifest")"
             echo "fonttools_version=$(jq -r '.fontTools.version' "$manifest")"
+            echo "node_version=$(jq -r '.runtime.node' "$manifest")"
+            echo "python_version=$(jq -r '.runtime.python' "$manifest")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout Iosevka source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           repository: ${{ steps.toolchain.outputs.iosevka_repository }}
           ref: ${{ steps.toolchain.outputs.iosevka_tag }}
@@ -50,14 +77,16 @@ jobs:
           sudo apt-get install -y ttfautohint python3 fontforge
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: "20"
+          node-version: ${{ steps.toolchain.outputs.node_version }}
+          cache: npm
+          cache-dependency-path: iosevka-src/package-lock.json
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
-          python-version: "3.12"
+          python-version: ${{ steps.toolchain.outputs.python_version }}
 
       - name: Install webfont tooling
         run: |
@@ -161,6 +190,18 @@ jobs:
 
       - name: Package release archives
         run: |
+          set -euo pipefail
+
+          archive_directory() {
+            local source_dir="$1"
+            local archive_name="$2"
+            find "$source_dir" -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
+            (
+              cd "$source_dir"
+              TZ=UTC zip -X -q -r "../${archive_name}" .
+            )
+          }
+
           DIST="iosevka-src/dist/NoisyMono"
           DIST_TERM="iosevka-src/dist/NoisyMonoTerm"
 
@@ -178,7 +219,7 @@ jobs:
           for f in "$DIST"/TTF-Unhinted/NoisyMono-*.ttf;          do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg/Normal/Unhinted/;      done
 
           cp LICENSE FONTLOG.txt pkg/
-          cd pkg && zip -r ../NoisyMono.zip . && cd ..
+          archive_directory pkg NoisyMono.zip
 
           # ── NoisyMono-NerdFont.zip — all widths, Nerd Font patched ─────
           mkdir -p pkg-nf/Normal pkg-nf/SemiCondensed pkg-nf/Condensed
@@ -186,7 +227,7 @@ jobs:
           cp patched-fonts/SemiCondensed/*.ttf  pkg-nf/SemiCondensed/
           cp patched-fonts/Condensed/*.ttf      pkg-nf/Condensed/
           cp LICENSE FONTLOG.txt pkg-nf/
-          cd pkg-nf && zip -r ../NoisyMono-NerdFont.zip . && cd ..
+          archive_directory pkg-nf NoisyMono-NerdFont.zip
 
           # ── NoisyMono-Term.zip — all widths, term spacing ──────────────
           mkdir -p pkg-term/Normal/Hinted      pkg-term/Normal/Unhinted
@@ -202,7 +243,7 @@ jobs:
           for f in "$DIST_TERM"/TTF-Unhinted/NoisyMonoTerm-*.ttf;          do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg-term/Normal/Unhinted/;     done
 
           cp LICENSE FONTLOG.txt pkg-term/
-          cd pkg-term && zip -r ../NoisyMono-Term.zip . && cd ..
+          archive_directory pkg-term NoisyMono-Term.zip
 
           # ── NoisyMono-NL.zip — all widths, no ligatures ────────────────
           DIST_NL="iosevka-src/dist/NoisyMonoNL"
@@ -219,7 +260,7 @@ jobs:
           for f in "$DIST_NL"/TTF-Unhinted/NoisyMonoNL-*.ttf;          do [[ "$f" == *Condensed* ]]     && continue; cp "$f" pkg-nl/Normal/Unhinted/;     done
 
           cp LICENSE FONTLOG.txt pkg-nl/
-          cd pkg-nl && zip -r ../NoisyMono-NL.zip . && cd ..
+          archive_directory pkg-nl NoisyMono-NL.zip
 
           # ── NoisyMono-Term-NerdFont.zip — term spacing + Nerd Font ─────
           mkdir -p pkg-term-nf/Normal pkg-term-nf/SemiCondensed pkg-term-nf/Condensed
@@ -227,7 +268,7 @@ jobs:
           cp patched-fonts-term/SemiCondensed/*.ttf  pkg-term-nf/SemiCondensed/
           cp patched-fonts-term/Condensed/*.ttf      pkg-term-nf/Condensed/
           cp LICENSE FONTLOG.txt pkg-term-nf/
-          cd pkg-term-nf && zip -r ../NoisyMono-Term-NerdFont.zip . && cd ..
+          archive_directory pkg-term-nf NoisyMono-Term-NerdFont.zip
 
           # ── NoisyMono-NL-NerdFont.zip — no ligatures + Nerd Font ───────
           mkdir -p pkg-nl-nf/Normal pkg-nl-nf/SemiCondensed pkg-nl-nf/Condensed
@@ -235,7 +276,7 @@ jobs:
           cp patched-fonts-nl/SemiCondensed/*.ttf  pkg-nl-nf/SemiCondensed/
           cp patched-fonts-nl/Condensed/*.ttf      pkg-nl-nf/Condensed/
           cp LICENSE FONTLOG.txt pkg-nl-nf/
-          cd pkg-nl-nf && zip -r ../NoisyMono-NL-NerdFont.zip . && cd ..
+          archive_directory pkg-nl-nf NoisyMono-NL-NerdFont.zip
 
       - name: Package curated Web archive
         env:
@@ -254,38 +295,58 @@ jobs:
           cp webfonts/README.md pkg-web/README.md
           cp LICENSE pkg-web/LICENSE
           cp FONTLOG.txt pkg-web/FONTLOG.txt
-          (cd pkg-web && zip -r ../NoisyMono-Web.zip .)
+          find pkg-web -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
+          (cd pkg-web && TZ=UTC zip -X -q -r ../NoisyMono-Web.zip .)
 
       - name: Package full-glyph Web archive
         run: |
+          set -euo pipefail
           mkdir -p pkg-web-full
           cp -R iosevka-src/dist/NoisyMono/WOFF2 pkg-web-full/
           cp -R iosevka-src/dist/NoisyMono/WOFF2-Unhinted pkg-web-full/
           cp LICENSE FONTLOG.txt pkg-web-full/
-          (cd pkg-web-full && zip -r ../NoisyMono-Web-Full.zip .)
+          find pkg-web-full -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
+          (cd pkg-web-full && TZ=UTC zip -X -q -r ../NoisyMono-Web-Full.zip .)
 
-      - name: Set release version
-        id: vars
+      - name: Validate complete release candidate
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          fi
+          python scripts/validate-release.py . \
+            --version "${{ steps.vars.outputs.tag }}" \
+            --source-sha "$GITHUB_SHA" \
+            --write-manifest release-manifest.json \
+            --write-checksums SHA256SUMS
+
+      - name: Preserve validated candidate
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: NoisyMono-${{ steps.vars.outputs.tag }}-candidate
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            NoisyMono.zip
+            NoisyMono-NerdFont.zip
+            NoisyMono-Term.zip
+            NoisyMono-Term-NerdFont.zip
+            NoisyMono-NL.zip
+            NoisyMono-NL-NerdFont.zip
+            NoisyMono-Web.zip
+            NoisyMono-Web-Full.zip
+            SHA256SUMS
+            release-manifest.json
 
       - name: Create Release and Upload Assets
-        uses: softprops/action-gh-release@v1
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ steps.vars.outputs.tag }}
           name: "Noisy Mono ${{ steps.vars.outputs.tag }}"
-          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.vars.outputs.tag, '-') }}
+          make_latest: ${{ !contains(steps.vars.outputs.tag, '-') }}
+          fail_on_unmatched_files: true
+          preserve_order: true
           body: |
-            ## Noisy Mono ${{ steps.vars.outputs.tag }}
-
-            <!-- What's new in this release -->
-
-            ---
-
             ### Downloads
 
             | Situation | Download |
@@ -299,7 +360,8 @@ jobs:
             | Web (curated Latin/technical subsets + CSS) | `NoisyMono-Web.zip` |
             | Web (complete glyph repertoire) | `NoisyMono-Web-Full.zip` |
 
-            Not sure which to pick? See the README in this repository.
+            Verify downloaded archives with `SHA256SUMS`. Exact source and
+            toolchain provenance are recorded in `release-manifest.json`.
           files: |
             NoisyMono.zip
             NoisyMono-NerdFont.zip
@@ -309,5 +371,7 @@ jobs:
             NoisyMono-NL-NerdFont.zip
             NoisyMono-Web.zip
             NoisyMono-Web-Full.zip
+            SHA256SUMS
+            release-manifest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

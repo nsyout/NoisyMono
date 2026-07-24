@@ -24,8 +24,9 @@ from a custom [Iosevka](https://github.com/be5invis/Iosevka) configuration.
 | ![Noisy Mono Sample](assets/NoisyMono.png) | ![Berkeley Mono Sample](assets/BerkeleyMono.png) |
 
 Both images use the same source, canvas, size, Flexoki Dark palette, and macOS
-Core Text renderer. They show Noisy Mono Regular v34.4.0 and a locally licensed
-Berkeley Mono Regular v2.004 with each font's default OpenType behavior. See the
+Core Text renderer. They show the tracked Noisy Mono Regular webfont and a
+locally licensed Berkeley Mono Regular with each font's default OpenType
+behavior. Exact versions are recorded in the
 [render metadata](site/imgs/comparison-provenance.json). No Berkeley font files
 are distributed by this repository.
 
@@ -82,7 +83,8 @@ The generated families are written beneath `Iosevka/dist/`.
 
 Issues and pull requests are welcome. Character design and metrics begin in
 [`private-build-plans.toml`](private-build-plans.toml); release and upstream
-notes are in [`MAINTAINING.md`](MAINTAINING.md).
+notes are in the [maintainer handbook](MAINTAINING.md) and
+[release runbook](RELEASING.md).
 
 ## License & Credits
 

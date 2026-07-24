@@ -15,11 +15,11 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Compare pinned and stable releases
         env:
@@ -32,11 +32,16 @@ jobs:
           nerd_fonts_repository="$(jq -r '.nerdFonts.repository' "$manifest")"
           pinned_iosevka="$(jq -r '.iosevka.tag' "$manifest")"
           pinned_nerd_fonts="$(jq -r '.nerdFonts.tag' "$manifest")"
+          pinned_fonttools="$(jq -r '.fontTools.version' "$manifest")"
           latest_iosevka="$(
             gh api "repos/$iosevka_repository/releases/latest" --jq '.tag_name'
           )"
           latest_nerd_fonts="$(
             gh api "repos/$nerd_fonts_repository/releases/latest" --jq '.tag_name'
+          )"
+          latest_fonttools="$(
+            python3 -c \
+              'import json, urllib.request; print(json.load(urllib.request.urlopen("https://pypi.org/pypi/fonttools/json"))["info"]["version"])'
           )"
 
           title="[dependencies] Stable font toolchain updates available"
@@ -57,6 +62,13 @@ jobs:
             needs_update=true
             body+="- [ ] Nerd Fonts: \`$pinned_nerd_fonts\` → "
             body+="[\`$latest_nerd_fonts\`](https://github.com/$nerd_fonts_repository/releases/tag/$latest_nerd_fonts)"
+            body+=$'\n'
+          fi
+
+          if [[ "$pinned_fonttools" != "$latest_fonttools" ]]; then
+            needs_update=true
+            body+="- [ ] FontTools: \`$pinned_fonttools\` → "
+            body+="[\`$latest_fonttools\`](https://pypi.org/project/fonttools/$latest_fonttools/)"
             body+=$'\n'
           fi
 
@@ -87,5 +99,5 @@ jobs:
             gh issue close \
               "$issue_number" \
               --repo "$GITHUB_REPOSITORY" \
-              --comment "Pinned versions now match both latest stable releases."
+              --comment "Pinned versions now match all monitored stable releases."
           fi
