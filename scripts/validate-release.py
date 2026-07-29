@@ -27,6 +27,7 @@ REQUIRED_CODEPOINTS = {
     0x0041: "Latin capital A",
     0x0067: "Latin small g",
     0x00E9: "Latin small e with acute",
+    0x2014: "em dash",
     0x2192: "rightwards arrow",
     0x2500: "box drawings light horizontal",
 }
@@ -224,6 +225,14 @@ def validate_font(
             fail(
                 f"{archive_name}:{member_name} has multiple printable ASCII "
                 f"advance widths: {sorted(ascii_widths)}"
+            )
+
+        cell_width = next(iter(ascii_widths))
+        em_dash_width = font["hmtx"].metrics[cmap[0x2014]][0]
+        if em_dash_width != cell_width:
+            fail(
+                f"{archive_name}:{member_name} has a {em_dash_width}-unit "
+                f"em dash; expected one {cell_width}-unit cell"
             )
 
         if rule.strictly_monospaced:

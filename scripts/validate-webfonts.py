@@ -11,6 +11,7 @@ from fontTools.ttLib import TTFont
 REQUIRED_CODEPOINTS = {
     0x0041: "Latin capital A",
     0x00E9: "Latin small e with acute",
+    0x2014: "em dash",
     0x2192: "rightwards arrow",
     0x2500: "box drawings light horizontal",
 }
@@ -60,6 +61,14 @@ def main() -> None:
         for codepoint, label in REQUIRED_CODEPOINTS.items():
             if codepoint not in cmap:
                 parser.error(f"{font_path.name} is missing {label} (U+{codepoint:04X})")
+
+        cell_width = font["hmtx"].metrics[cmap[0x0041]][0]
+        em_dash_width = font["hmtx"].metrics[cmap[0x2014]][0]
+        if em_dash_width != cell_width:
+            parser.error(
+                f"{font_path.name} has a {em_dash_width}-unit em dash; "
+                f"expected one {cell_width}-unit cell"
+            )
 
         if "GSUB" not in font or font["GSUB"].table.FeatureList is None:
             parser.error(f"{font_path.name} has no GSUB feature list")

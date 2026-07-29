@@ -13,6 +13,7 @@ from a custom [Iosevka](https://github.com/be5invis/Iosevka) configuration.
 
 - Ten weights, three widths, and matching italics
 - A slashed zero by default—no OpenType setting required
+- Single-cell prose punctuation, including the em dash
 - Programming ligatures and distinctive code-focused glyphs
 - Desktop, terminal, no-ligature, Nerd Font, and web packages
 - Licensed under the SIL Open Font License 1.1

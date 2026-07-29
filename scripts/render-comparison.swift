@@ -133,7 +133,7 @@ let lines: [[Token]] = [
         Token(text: " };", color: muted),
     ],
     [Token(text: "}", color: muted)],
-    [],
+    [Token(text: "// Prose — one cell, clean rhythm.", color: faint)],
     [
         Token(text: "const ", color: magenta),
         Token(text: "compare ", color: text),

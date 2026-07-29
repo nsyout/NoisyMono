@@ -16,6 +16,13 @@ Copyright and lineage
 
 No Reserved Font Name is declared by this project at this time.
 
+2026-07-28 — Noisy Mono 1.0.1
+------------------------------
+
+- Changed the standard and no-ligature families to Iosevka's terminal-suitable
+  symbol spacing so the em dash occupies one monospace cell instead of two.
+- Added release and curated-webfont checks that reject a multi-cell em dash.
+
 2026-07-24 — Release pipeline hardening
 ----------------------------------------
 

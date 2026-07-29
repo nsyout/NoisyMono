@@ -6,7 +6,7 @@ on:
       version:
         description: "Candidate version (e.g. v1.0.0 or v1.0.0-rc.1)"
         required: true
-        default: "v1.0.0"
+        default: "v1.0.1"
 
 concurrency:
   group: font-release-${{ github.ref }}-${{ inputs.version }}

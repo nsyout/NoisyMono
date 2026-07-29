@@ -1,6 +1,8 @@
 [buildPlans.NoisyMono]
 family = "Noisy Mono"
-spacing = "normal"
+# Use Iosevka's narrow-width substitutions as the default so prose
+# punctuation such as the em dash occupies one monospace cell.
+spacing = "term"
 serifs = "sans"
 noCvSs = true
 exportGlyphNames = false
@@ -232,7 +234,7 @@ smallArchDepth = 157
 
 [buildPlans.NoisyMonoNL]
 family = "Noisy Mono NL"
-spacing = "normal"
+spacing = "term"
 serifs = "sans"
 noCvSs = true
 noLigation = true
